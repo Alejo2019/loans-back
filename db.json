@@ -1,0 +1,5 @@
+{
+    "users": [],
+    "loans": [],
+    "bank": { "capital": 1000000 }
+}
