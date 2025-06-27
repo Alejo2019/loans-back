@@ -28,7 +28,6 @@ app.use('/api/users', usersRouter);
 app.use('/api/loans', loansRouter);
 app.use('/api/bank', bankRouter);
 
-const jsonServerMiddleware = jsonServer.create();
 const router = jsonServer.router('db.json');
 const middlewares = jsonServer.defaults({
   static: './public',
@@ -42,12 +41,10 @@ app.use((req, res, next) => {
   router(req, res, next);
 });
 
-// Export db and io for use in routes
 export const db = jsonServer.router('db.json').db;
 export const notifyClients = () => {
   try {
     io.emit('dataUpdated', db.getState());
-    console.log('Notificación WebSocket enviada:', db.getState());
   } catch (error) {
     console.error('Error al enviar notificación WebSocket:', error);
   }

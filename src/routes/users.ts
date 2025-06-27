@@ -5,10 +5,8 @@ import { User, Bank, Loan } from '../types';
 const router = express.Router();
 
 router.post('/', (req: Request, res: Response) => {
-  console.log('Ruta /users POST recibida');
   const user: User = req.body;
   try {
-    // Validar que los campos requeridos estén presentes
     if (!user.idCard || !user.loanAmount || !user.name || !user.email) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
@@ -32,7 +30,6 @@ router.post('/', (req: Request, res: Response) => {
       if (bank.capital >= user.loanAmount) {
         const newCapital = bank.capital - user.loanAmount;
         db.get('bank').assign({ capital: newCapital }).write();
-        console.log('Capital actualizado a:', newCapital);
       } else {
         return res.status(400).json({ error: 'Capital insuficiente' });
       }
@@ -40,7 +37,6 @@ router.post('/', (req: Request, res: Response) => {
 
     const newUser = { ...user, id: Date.now(), hasPaid: false };
     db.get('users').push(newUser).write();
-    console.log('Usuario guardado:', newUser);
 
     const loan: Loan = {
       id: Date.now(),
@@ -51,12 +47,10 @@ router.post('/', (req: Request, res: Response) => {
       paymentDate: user.paymentDate || new Date().toISOString().split('T')[0],
     };
     db.get('loans').push(loan).write();
-    console.log('Préstamo guardado:', loan);
 
     db.write();
-    notifyClients(); // Notify clients of the update
+    notifyClients();
 
-    console.log('Estado de db.json tras escritura:', db.getState());
 
     res.status(201).json({ user: newUser, loanStatus: user.loanStatus });
   } catch (error) {
@@ -66,7 +60,6 @@ router.post('/', (req: Request, res: Response) => {
 });
 
 router.get('/', (req: Request, res: Response) => {
-  console.log('Ruta /users GET recibida');
   try {
     const users = db.get('users').value();
     res.json(users);
