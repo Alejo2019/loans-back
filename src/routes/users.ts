@@ -1,58 +1,62 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import jsonServer from 'json-server';
-import { User, Bank, Loan } from '../types/indesx';
+import { User, Bank, Loan } from '../types/index';
 
 const router = express.Router();
 const db = jsonServer.router('db.json').db;
 
-// Crear un nuevo usuario y solicitud de préstamo
-router.post('/', (req, res) => {
+router.post('/', (req: Request, res: Response) => {
+  console.log('Ruta /users POST recibida');
   const user: User = req.body;
   const existingUser = db.get('users').find({ idCard: user.idCard }).value();
 
-  // Validar si el usuario ya existe
   if (existingUser) {
     if (existingUser.loanStatus === 'rejected') {
       return res.status(400).json({ error: 'Usuario rechazado previamente' });
     }
-    if (!existingUser.hasPaid) {
+    const activeLoan = db.get('loans').find({ userId: user.idCard, hasPaid: false }).value();
+    if (activeLoan) {
       return res.status(400).json({ error: 'Usuario con préstamo pendiente' });
     }
   }
 
-  // Lógica de aprobación aleatoria (solo para nuevos usuarios)
-  const isApproved = existingUser ? true : Math.random() > 0.5;
+  const isApproved = existingUser ? true : Math.random() > 0.333;
   user.loanStatus = isApproved ? 'approved' : 'rejected';
 
-  // Actualizar capital del banco si el préstamo es aprobado
   if (isApproved) {
     const bank: Bank = db.get('bank').value();
     if (bank.capital >= user.loanAmount) {
-      db.get('bank').assign({ capital: bank.capital - user.loanAmount }).write();
+      const newCapital = bank.capital - user.loanAmount;
+      db.get('bank').assign({ capital: newCapital }).write();
+      console.log('Capital actualizado a:', newCapital);
     } else {
       return res.status(400).json({ error: 'Capital insuficiente' });
     }
   }
 
-  // Guardar usuario
-  db.get('users').push({ ...user, id: Date.now() }).write();
+  const newUser = { ...user, id: Date.now() };
+  db.get('users').push(newUser).write();
+  console.log('Usuario guardado:', newUser);
 
-  // Guardar préstamo
   const loan: Loan = {
+    id: Date.now(),
     userId: user.idCard,
     amount: user.loanAmount,
     status: user.loanStatus,
     hasPaid: false,
     paymentDate: user.paymentDate,
-    id: Date.now(),
   };
   db.get('loans').push(loan).write();
+  console.log('Préstamo guardado:', loan);
 
-  res.status(201).json(user);
+  db.write();
+  console.log('Estado de db.json tras escritura:', db.getState());
+
+  res.status(201).json({ user: newUser, loanStatus: user.loanStatus });
 });
 
-// Listar todos los usuarios
-router.get('/', (req, res) => {
+router.get('/', (req: Request, res: Response) => {
+  console.log('Ruta /users GET recibida');
   const users = db.get('users').value();
   res.json(users);
 });

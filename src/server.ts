@@ -1,31 +1,10 @@
 import express from 'express';
 import jsonServer from 'json-server';
-import dotenv from 'dotenv';
-import userRoutes from './routes/users';
-import loanRoutes from './routes/loans';
-import bankRoutes from './routes/bank';
-import fs from 'fs';
-
-dotenv.config();
+import usersRouter from './routes/users';
+import loansRouter from './routes/loans';
+import bankRouter from './routes/bank';
 
 const app = express();
-const port = process.env.PORT || 3001;
-
-const initialBankCapital = parseInt(process.env.INITIAL_BANK_CAPITAL || '1000000');
-const dbPath = 'db.json';
-if (!fs.existsSync(dbPath)) {
-  fs.writeFileSync(
-    dbPath,
-    JSON.stringify({ users: [], loans: [], bank: { capital: initialBankCapital } }, null, 2)
-  );
-} else {
-  const dbData = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-  if (!dbData.bank || typeof dbData.bank.capital !== 'number') {
-    dbData.bank = { capital: initialBankCapital };
-    fs.writeFileSync(dbPath, JSON.stringify(dbData, null, 2));
-  }
-}
-
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -35,13 +14,28 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use('/api/users', usersRouter);
+app.use('/api/loans', loansRouter);
+app.use('/api/bank', bankRouter);
+
+const server = jsonServer.create();
 const router = jsonServer.router('db.json');
-app.use('/api/db', router);
-
-app.use('/api/users', userRoutes);
-app.use('/api/loans', loanRoutes);
-app.use('/api/bank', bankRoutes);
-
-app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
+const middlewares = jsonServer.defaults({
+  static: './public',
 });
+
+app.use(middlewares);
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  router(req, res, next);
+});
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log('Estado inicial de db.json:', jsonServer.router('db.json').db.getState());
+});
+
+export default app;
