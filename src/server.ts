@@ -3,8 +3,18 @@ import jsonServer from 'json-server';
 import usersRouter from './routes/users';
 import loansRouter from './routes/loans';
 import bankRouter from './routes/bank';
+import http from 'http';
+import { Server } from 'socket.io';
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  },
+});
+
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -18,7 +28,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/loans', loansRouter);
 app.use('/api/bank', bankRouter);
 
-const server = jsonServer.create();
+const jsonServerMiddleware = jsonServer.create();
 const router = jsonServer.router('db.json');
 const middlewares = jsonServer.defaults({
   static: './public',
@@ -32,10 +42,21 @@ app.use((req, res, next) => {
   router(req, res, next);
 });
 
+// Export db and io for use in routes
+export const db = jsonServer.router('db.json').db;
+export const notifyClients = () => {
+  try {
+    io.emit('dataUpdated', db.getState());
+    console.log('Notificación WebSocket enviada:', db.getState());
+  } catch (error) {
+    console.error('Error al enviar notificación WebSocket:', error);
+  }
+};
+
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  console.log('Estado inicial de db.json:', jsonServer.router('db.json').db.getState());
+  console.log('Estado inicial de db.json:', db.getState());
 });
 
 export default app;

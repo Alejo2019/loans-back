@@ -1,42 +1,51 @@
 import express from 'express';
-import jsonServer from 'json-server';
+import { db, notifyClients } from '../server';
 import { Bank, Loan } from '../types';
 
 const router = express.Router();
-const db = jsonServer.router('db.json').db;
 
 router.get('/', (req, res) => {
   console.log('Ruta /loans GET recibida');
-  const loans = db.get('loans').value();
-  res.json(loans);
+  try {
+    const loans = db.get('loans').value();
+    res.json(loans);
+  } catch (error) {
+    console.error('Error al obtener préstamos:', error);
+    res.status(500).json({ error: 'Error al obtener los préstamos' });
+  }
 });
 
 router.patch('/:id', (req, res) => {
   console.log('Ruta /loans PATCH recibida');
   const loanId = parseInt(req.params.id);
-  const loan: Loan = db.get('loans').find({ id: loanId }).value();
+  try {
+    const loan: Loan = db.get('loans').find({ id: loanId }).value();
+    if (!loan) {
+      return res.status(404).json({ error: 'Préstamo no encontrado' });
+    }
 
-  if (!loan) {
-    return res.status(404).json({ error: 'Préstamo no encontrado' });
+    if (req.body.hasPaid) {
+      const bank: Bank = db.get('bank').value();
+      db.get('bank').assign({ capital: bank.capital + loan.amount }).write();
+      console.log('Capital del banco actualizado:', db.get('bank').value());
+      db.get('loans').find({ id: loanId }).assign({ hasPaid: true }).write();
+      console.log('Préstamo actualizado:', db.get('loans').find({ id: loanId }).value());
+      db.get('users')
+        .find({ idCard: loan.userId })
+        .assign({ hasPaid: true })
+        .write();
+      console.log('Usuario actualizado:', db.get('users').find({ idCard: loan.userId }).value());
+    }
+
+    db.write();
+    notifyClients(); // Notify clients of the update
+
+    console.log('Estado de db.json tras escritura:', db.getState());
+    res.json({ message: 'Préstamo actualizado' });
+  } catch (error) {
+    console.error('Error al actualizar préstamo:', error);
+    res.status(500).json({ error: 'Error al actualizar el préstamo' });
   }
-
-  if (req.body.hasPaid) {
-    const bank: Bank = db.get('bank').value();
-    db.get('bank').assign({ capital: bank.capital + loan.amount }).write();
-    console.log('Capital del banco actualizado:', db.get('bank').value());
-    db.get('loans').find({ id: loanId }).assign({ hasPaid: true }).write();
-    console.log('Préstamo actualizado:', db.get('loans').find({ id: loanId }).value());
-    db.get('users')
-      .find({ idCard: loan.userId })
-      .assign({ hasPaid: true })
-      .write();
-    console.log('Usuario actualizado:', db.get('users').find({ idCard: loan.userId }).value());
-  }
-
-  db.write();
-  console.log('Estado de db.json tras escritura:', db.getState());
-
-  res.json({ message: 'Préstamo actualizado' });
 });
 
 export default router;

@@ -1,5 +1,77 @@
 {
-    "users": [],
-    "loans": [],
-    "bank": { "capital": 1000000 }
+  "users": [
+    {
+      "name": "alejo",
+      "email": "test@mail.co",
+      "idCard": "2828282",
+      "loanAmount": 36000,
+      "loanStatus": "rejected",
+      "hasPaid": false,
+      "id": 1751033048209
+    },
+    {
+      "name": "tets",
+      "email": "alejo@mail.com",
+      "idCard": "24244",
+      "loanAmount": 21000,
+      "loanStatus": "approved",
+      "hasPaid": false,
+      "id": 1751033059694
+    },
+    {
+      "name": "alejo",
+      "email": "test@mail.com",
+      "idCard": "1212",
+      "loanAmount": 23000,
+      "loanStatus": "approved",
+      "hasPaid": false,
+      "id": 1751033457677
+    },
+    {
+      "name": "abby",
+      "email": "test@mail.com",
+      "idCard": "1818",
+      "loanAmount": 22000,
+      "loanStatus": "approved",
+      "hasPaid": false,
+      "id": 1751033479740
+    }
+  ],
+  "loans": [
+    {
+      "id": 1751033048210,
+      "userId": "2828282",
+      "amount": 36000,
+      "status": "rejected",
+      "hasPaid": false,
+      "paymentDate": "2025-06-27"
+    },
+    {
+      "id": 1751033059695,
+      "userId": "24244",
+      "amount": 21000,
+      "status": "approved",
+      "hasPaid": false,
+      "paymentDate": "2025-06-27"
+    },
+    {
+      "id": 1751033457678,
+      "userId": "1212",
+      "amount": 23000,
+      "status": "approved",
+      "hasPaid": false,
+      "paymentDate": "2025-06-27"
+    },
+    {
+      "id": 1751033479741,
+      "userId": "1818",
+      "amount": 22000,
+      "status": "approved",
+      "hasPaid": false,
+      "paymentDate": "2025-06-27"
+    }
+  ],
+  "bank": {
+    "capital": 934000
+  }
 }
